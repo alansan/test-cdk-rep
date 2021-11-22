@@ -2,10 +2,11 @@
 
 from aws_cdk import core
 
-from cdk.cdk_stack import CdkStack
+from test_stack.test_stack import TestStack
+from test_pipeline.test_pipeline import MyPipelineStack
 
 
 app = core.App()
-CdkStack(app, "cdk")
+MyPipelineStack(app, "test-pipeline-cdk")
 
 app.synth()

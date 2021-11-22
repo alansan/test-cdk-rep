@@ -7,7 +7,7 @@ from aws_cdk import (
 )
 
 
-class CdkStack(core.Stack):
+class TestStack(core.Stack):
 
     def __init__(self, scope: core.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -18,7 +18,7 @@ class CdkStack(core.Stack):
         )
 
         topic = sns.Topic(
-            self, "CdkTopic"
+            self, "TestTopic"
         )
 
         topic.add_subscription(subs.SqsSubscription(queue))
