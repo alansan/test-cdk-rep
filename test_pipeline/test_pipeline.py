@@ -5,15 +5,10 @@ from aws_cdk import (
 from aws_cdk import (
     aws_codepipeline as cp,
     aws_codepipeline_actions as codepipeline_actions,
-    pipelines
+    
 )
+from aws_cdk.pipelines import CodePipeline, CodePipelineSource, ShellStep
 
-
-# The stacks for our app are minimally defined here.  The internals of these
-# stacks aren't important, except that DatabaseStack exposes an attribute
-# "table" for a database table it defines, and ComputeStack accepts a reference
-# to this table in its properties.
-#
 
 class LambdaStack(core.Stack):
     
@@ -24,41 +19,30 @@ class LambdaStack(core.Stack):
         my_lambda = _lambda.Function(
             self, 'HelloHandler',
             runtime=_lambda.Runtime.PYTHON_3_7,
-            code=_lambda.Code.from_asset('lambda'),
+            code=_lambda.Code.from_asset('test_pipeline/lambda'),
             handler='hello.handler',
         )
 
-#
-# Stack to hold the pipeline
-#
+
+class DeployStage(core.Stage):
+    def __init__(self, scope, id, *, env=None, outdir=None):
+        super().__init__(scope, id, env=env, outdir=outdir)
+
+        lambda_stack = LambdaStack(self, "LambdaStack")
+        
+        
 class MyPipelineStack(core.Stack):
     def __init__(self, scope, id, *, description=None, env=None):
         super().__init__(scope, id, description=description, env=env)
 
-        # synth=pipelines.CodeBuildStep('synth_rizwan', input=source, commands=["cd infra", "pip install -r requirements.txt", "npm install -g aws-cdk"
-        # , "cdk synth"] ,primary_output_directory='infra/cdk.out', role= cbRole)
-        
-        pipeline = pipelines.CodePipeline(self, "Pipeline")
-
-        # 'MyApplication' is defined below. Call `addStage` as many times as
-        # necessary with any account and region (may be different from the
-        # pipeline's).
-        pipeline.add_stage(MyApplication(self, "Prod",
-            env=env
-            )
-        )
-
-#
-# Your application
-#
-# May consist of one or more Stacks (here, two)
-#
-# By declaring our DatabaseStack and our ComputeStack inside a Stage,
-# we make sure they are deployed together, or not at all.
-#
-class MyApplication(core.Stage):
-    def __init__(self, scope, id, *, env=None, outdir=None):
-        super().__init__(scope, id, env=env, outdir=outdir)
-
-        lambda_stack = LambdaStack(self, "Database")
-
+        pipeline =  CodePipeline(self, "Pipeline", 
+                        synth=ShellStep("Synth", 
+                                        input=CodePipelineSource.git_hub("alansan/test-cdk-rep", "master"),
+                                        commands=["npm install -g aws-cdk", 
+                                        "python3 -m pip install -r requirements.txt",
+                                        "cdk synth"]
+                                        ),
+                        cross_account_keys=False
+                    )
+    
+        pipeline.add_stage(DeployStage(self, "deploy", env=env))
