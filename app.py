@@ -2,7 +2,7 @@
 
 from aws_cdk import core
 
-from test_stack.test_stack import TestStack
+
 from test_pipeline.test_pipeline import MyPipelineStack
 
 

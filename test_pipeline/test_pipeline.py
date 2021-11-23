@@ -39,10 +39,10 @@ class MyPipelineStack(core.Stack):
                         synth=ShellStep("Synth", 
                                         input=CodePipelineSource.git_hub("alansan/test-cdk-rep", "master"),
                                         commands=["npm install -g aws-cdk", 
-                                        "python3 -m pip install -r requirements.txt",
+                                        "python -m pip install -r requirements.txt",
                                         "cdk synth"]
                                         ),
                         cross_account_keys=False
                     )
     
-        pipeline.add_stage(DeployStage(self, "deploy", env=env))
+        # pipeline.add_stage(DeployStage(self, "deploy", env=env))
