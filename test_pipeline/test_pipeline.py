@@ -1,48 +1,38 @@
-from aws_cdk import (
-    core,
-    aws_lambda as _lambda
-)
-from aws_cdk import (
-    aws_codepipeline as cp,
-    aws_codepipeline_actions as codepipeline_actions,
-    
-)
-from aws_cdk.pipelines import CodePipeline, CodePipelineSource, ShellStep
+from aws_cdk import core as cdk
+from aws_cdk.pipelines import CodePipeline, CodePipelineSource, ShellStep, ManualApprovalStep
+from aws_cdk.aws_lambda import Function, InlineCode, Runtime
+import os
 
+class MyPipelineAppStage(cdk.Stage):
+    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
 
-class LambdaStack(core.Stack):
-    
-    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
-        super().__init__(scope, id, **kwargs)
+        lambdaStack = MyLambdaStack(self, "LambdaStack")
 
-        # Defines an AWS Lambda resource
-        my_lambda = _lambda.Function(
-            self, 'HelloHandler',
-            runtime=_lambda.Runtime.PYTHON_3_7,
-            code=_lambda.Code.from_asset('test_pipeline/lambda'),
-            handler='hello.handler',
+class MyLambdaStack(cdk.Stack):
+    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        Function(self, "LambdaFunction", 
+            runtime=Runtime.NODEJS_12_X,
+            handler="index.handler",
+            code=InlineCode("exports.handler = _ => 'Hello, CDK';")
         )
-
-
-class DeployStage(core.Stage):
-    def __init__(self, scope, id, *, env=None, outdir=None):
-        super().__init__(scope, id, env=env, outdir=outdir)
-
-        lambda_stack = LambdaStack(self, "LambdaStack")
         
-        
-class MyPipelineStack(core.Stack):
-    def __init__(self, scope, id, *, description=None, env=None):
-        super().__init__(scope, id, description=description, env=env)
+class MyPipelineStack(cdk.Stack):
+
+    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
 
         pipeline =  CodePipeline(self, "Pipeline", 
+                        pipeline_name="MyPipeline",
                         synth=ShellStep("Synth", 
-                                        input=CodePipelineSource.git_hub("alansan/test-cdk-rep", "master"),
-                                        commands=["npm install -g aws-cdk", 
-                                        "python -m pip install -r requirements.txt",
-                                        "cdk synth"]
-                                        ),
-                        cross_account_keys=False
+                            input=CodePipelineSource.git_hub("alansan/test-cdk-rep", "master"),
+                            commands=["npm install -g aws-cdk", 
+                                "python -m pip install -r requirements.txt",
+                                "cdk synth"]
+                        ),
+                        cross_account_keys=True
                     )
-    
-        # pipeline.add_stage(DeployStage(self, "deploy", env=env))
+
+        test_stage = pipeline.add_stage(MyPipelineAppStage(self, "test"))
