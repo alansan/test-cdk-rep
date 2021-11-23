@@ -32,7 +32,7 @@ class MyPipelineStack(cdk.Stack):
                                 "python -m pip install -r requirements.txt",
                                 "cdk synth"]
                         ),
-                        cross_account_keys=True
+                        cross_account_keys=False
                     )
 
         test_stage = pipeline.add_stage(MyPipelineAppStage(self, "test"))
